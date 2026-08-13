@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overseas Store Operations Manual · ARTBOX</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="lang-toggle">
+    <button id="btn-ko" class="active">한국어</button>
+    <button id="btn-en">EN</button>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main" id="content"></main>
+</div>
+
+<script src="render.js"></script>
+<script>
+let lang = 'ko';
+let data = null;
+
+fetch('content.json?_=' + Date.now())
+  .then(r => r.json())
+  .then(json => { data = json; renderAll(); })
+  .catch(err => {
+    document.getElementById('content').innerHTML =
+      '<p style="padding:40px;color:#b93e3e;">content.json을 불러오지 못했어요. 같은 폴더에 파일이 있는지 확인해주세요.</p>';
+    console.error(err);
+  });
+
+function renderAll() {
+  renderSidebar();
+  renderSite(document.getElementById('content'), data, lang);
+}
+
+function renderSidebar() {
+  const sb = document.getElementById('sidebar');
+  const t = (f) => (f && (f[lang] || f.ko || f.en)) || '';
+  sb.innerHTML = data.chapters.map(c => `
+    <div class="toc-chapter">
+      <button class="chap-link" data-id="${c.id}">${c.icon || ''} ${c.num}. ${t(c.title)}</button>
+      <div class="toc-sections">
+        ${(c.sections || []).map(s => `
+          <button class="sec-link" data-id="${c.id}-${s.num}">${s.num}. ${t(s.title)}</button>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+  sb.querySelectorAll('.chap-link, .sec-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+
+document.getElementById('btn-ko').addEventListener('click', () => switchLang('ko'));
+document.getElementById('btn-en').addEventListener('click', () => switchLang('en'));
+
+function switchLang(l) {
+  lang = l;
+  document.getElementById('btn-ko').classList.toggle('active', l === 'ko');
+  document.getElementById('btn-en').classList.toggle('active', l === 'en');
+  document.documentElement.lang = l;
+  renderAll();
+}
+</script>
+</body>
+</html>
