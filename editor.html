@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>매뉴얼 편집기 (관리자 전용)</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { --ed-radius: 14px; --ed-shadow: 0 6px 20px rgba(185,62,62,0.10); }
+  body { background: var(--page-bg); }
+
+  .gate {
+    max-width: 360px; margin: 120px auto; padding: 32px;
+    background: #fff; border-radius: var(--ed-radius); box-shadow: var(--ed-shadow); text-align: center;
+  }
+  .gate input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #ddd; margin: 14px 0; font-size: 15px; }
+  .gate button { background: var(--coral-900); color: #fff; border: none; border-radius: var(--radius-pill);
+    padding: 10px 18px; font-family: inherit; font-weight: 700; cursor: pointer; font-size: 14px; }
+  .gate .note { font-size: 12px; color: #948b89; line-height: 1.5; }
+
+  .ed-topbar {
+    position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; background: #fff; border-bottom: 1px solid var(--line);
+  }
+  .ed-topbar strong { font-size: 14px; }
+  .ed-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    font-size: 12.5px; padding: 6px 14px; border-radius: var(--radius-pill);
+    border: 1px solid var(--coral-900); background: #fff; color: var(--coral-900); cursor: pointer; font-family: inherit; font-weight: 600;
+  }
+  .btn.primary { background: var(--coral-900); color: #fff; }
+  .btn.danger { border-color: #c0392b; color: #c0392b; }
+  .btn.ghost { border-style: dashed; }
+  #fileInput { display: none; }
+
+  .ed-page { max-width: var(--maxw); margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ---- static (view) blocks: click anywhere to edit ---- */
+  .ed-chapter-view, .ed-section-view {
+    cursor: pointer; border-radius: 10px; padding: 10px 12px; margin: 4px 0;
+    border: 1px solid transparent; transition: background .12s ease, border-color .12s ease;
+  }
+  .ed-chapter-view:hover, .ed-section-view:hover { background: #fff; border-color: var(--line); }
+  .ed-chapter-view:hover::after, .ed-section-view:hover::after {
+    content: '클릭해서 편집'; float: right; font-size: 11px; color: var(--coral-900); font-weight: 600;
+  }
+  .ed-chapter-view .num-badge { display:inline-block; color: var(--coral-900); font-weight:700; font-size:11px; margin-bottom:4px; }
+  .ed-chapter-view h2 { margin:0; font-size:18px; font-weight:800; }
+  .ed-section-view .sec-title-row { font-weight:700; font-size:14.5px; margin-bottom:4px; }
+  .ed-section-view .sec-num-tag { color: var(--coral-900); font-weight:700; margin-right: 4px; }
+  .ed-section-view .bullets { margin:0; padding-left:0; list-style:none; }
+  .ed-section-view .bullets li { position:relative; padding-left:14px; margin-bottom:3px; font-size:13px; color: var(--ink-600); }
+  .ed-section-view .bullets li::before { content:'–'; position:absolute; left:0; color: var(--coral-900); }
+  .ed-section-view .thumb-row { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .ed-section-view .thumb-row img { width:54px; height:44px; object-fit:cover; border-radius:6px; border:1px solid var(--line); }
+
+  /* ---- edit forms (inline, page-like) ---- */
+  .ed-form {
+    background: #fff; border: 1.5px solid var(--coral-900); border-radius: var(--ed-radius);
+    padding: 16px 18px; margin: 4px 0 10px; box-shadow: var(--ed-shadow);
+  }
+  .ed-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .num-mini { width: 40px; text-align: center; padding: 4px; font-size: 12.5px; border: 1px solid var(--line); border-radius: 6px; font-family:inherit; }
+  .field-label { font-size: 11px; font-weight: 700; color: var(--coral-900); margin: 10px 0 3px; display:block; letter-spacing:.02em; }
+  .ed-form input[type=text], .ed-form input[type=number], .ed-form textarea, .ed-form select {
+    width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px;
+    font-family: inherit; font-size: 13px; background: #fffaf9;
+  }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .image-block { background: var(--page-bg); border-radius: 10px; padding: 8px 10px; margin: 6px 0; }
+  .ed-form-footer { display:flex; justify-content: space-between; margin-top: 12px; }
+
+  .ghost-add {
+    display: block; width: 100%; text-align: center; padding: 10px; margin: 8px 0;
+    border: 1.5px dashed var(--line); border-radius: 10px; background: transparent;
+    color: var(--ink-600); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .ghost-add:hover { border-color: var(--coral-900); color: var(--coral-900); background: #fff; }
+  .ghost-add.chapter { font-size: 14px; padding: 14px; margin-top: 20px; }
+
+  /* ---- GitHub connect panel ---- */
+  .gh-panel {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--ed-radius);
+    padding: 14px 16px; margin: 0 20px 14px; box-shadow: var(--ed-shadow); display: none;
+  }
+  .gh-panel.open { display: block; }
+  .gh-panel .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .gh-panel input[type=text], .gh-panel input[type=password] {
+    width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px;
+    font-family: inherit; font-size: 13px;
+  }
+  .gh-panel label.chk { font-size: 12px; color: var(--ink-600); display:flex; align-items:center; gap:6px; margin: 6px 0; }
+  .gh-status { font-size: 12.5px; margin-top: 8px; padding: 8px 10px; border-radius: 8px; display:none; }
+  .gh-status.ok { display:block; background:#e7f6ea; color:#1e7e34; }
+  .gh-status.err { display:block; background:#fdeaea; color:#c0392b; }
+  .gh-status.pending { display:block; background:#fff6e0; color:#8a6d00; }
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <h2 style="margin-top:0;">🔒 편집자 로그인</h2>
+  <p class="note">이 페이지는 콘텐츠 편집 전용이며 검색엔진에도 노출되지 않아요.<br>단, 정적 사이트라 완전한 보안은 아니니 URL을 외부에 공유하지 마세요.</p>
+  <input type="password" id="passcodeInput" placeholder="비밀번호 입력">
+  <button onclick="tryUnlock()">입장</button>
+  <p class="note" id="gateError" style="color:#c0392b;"></p>
+</div>
+
+<div id="editorShell" style="display:none;">
+  <div class="ed-topbar">
+    <strong>✏️ 매뉴얼 편집 — 구역을 클릭해서 수정하세요</strong>
+    <div class="ed-actions">
+      <button class="btn" onclick="toggleGhPanel()">⚙️ GitHub 연결</button>
+      <button class="btn" onclick="loadJsonFile()">JSON 불러오기</button>
+      <button class="btn" onclick="exportJson()">내보내기 ⤓</button>
+      <button class="btn primary" onclick="saveToGithub()">GitHub에 저장 ⬆</button>
+    </div>
+  </div>
+  <input type="file" id="fileInput" accept="application/json">
+
+  <div class="gh-panel" id="ghPanel">
+    <div class="row-2">
+      <div>
+        <label class="field-label" style="margin-top:0;">GitHub 계정(owner)</label>
+        <input type="text" id="gh-owner" placeholder="karrotinab">
+      </div>
+      <div>
+        <label class="field-label" style="margin-top:0;">저장소 이름(repo)</label>
+        <input type="text" id="gh-repo" placeholder="manual-site">
+      </div>
+    </div>
+    <div class="row-2">
+      <div>
+        <label class="field-label" style="margin-top:0;">브랜치</label>
+        <input type="text" id="gh-branch" placeholder="main" value="main">
+      </div>
+      <div>
+        <label class="field-label" style="margin-top:0;">파일 경로</label>
+        <input type="text" id="gh-path" placeholder="content.json" value="content.json">
+      </div>
+    </div>
+    <label class="field-label" style="margin-top:0;">개인 액세스 토큰 (Fine-grained, 이 저장소의 Contents: Read and write 권한만)</label>
+    <input type="password" id="gh-token" placeholder="github_pat_...">
+    <label class="chk"><input type="checkbox" id="gh-remember"> 이 브라우저에 토큰 기억하기 (localStorage — 공용 컴퓨터에서는 끄세요)</label>
+    <div style="display:flex; gap:8px;">
+      <button class="btn" onclick="saveGhSettings()">설정 저장</button>
+      <button class="btn danger" onclick="clearGhSettings()">연결 해제</button>
+    </div>
+    <div class="gh-status" id="ghStatus"></div>
+  </div>
+
+  <div id="pageRoot" class="ed-page"></div>
+</div>
+
+<script src="render.js"></script>
+<script>
+// ⚠️ 클라이언트 측 비밀번호이며, 완전한 접근 제어가 아니라 '가벼운 잠금'입니다.
+const EDITOR_PASSCODE = 'artbox2026';
+
+function tryUnlock() {
+  const val = document.getElementById('passcodeInput').value;
+  if (val === EDITOR_PASSCODE) {
+    sessionStorage.setItem('manualEditorAuth', '1');
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('editorShell').style.display = 'block';
+    initEditor();
+  } else {
+    document.getElementById('gateError').textContent = '비밀번호가 올바르지 않아요.';
+  }
+}
+if (sessionStorage.getItem('manualEditorAuth') === '1') {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('editorShell').style.display = 'block';
+  window.addEventListener('DOMContentLoaded', initEditor);
+}
+
+let data = null;
+let editingKey = null; // e.g. 'ch-0' or 'sec-0-1'
+
+function initEditor() {
+  fetch('content.json?_=' + Date.now())
+    .then(r => r.json())
+    .then(json => { data = json; render(); })
+    .catch(() => {
+      data = { meta: { siteTitle: {ko:'',en:''}, subtitle: {ko:'',en:''}, logo:'ARTBOX' }, chapters: [] };
+      render();
+    });
+}
+
+function esc(s) { return (s || '').toString().replace(/"/g, '&quot;'); }
+function iconType(icon) { return (icon && typeof icon === 'object') ? (icon.type || 'emoji') : 'emoji'; }
+function iconValue(icon) { return (icon && typeof icon === 'object') ? (icon.value || '') : (icon || ''); }
+function tBoth(f) { return { ko: (f && f.ko) || '', en: (f && f.en) || '' }; }
+
+function render() {
+  const root = document.getElementById('pageRoot');
+  root.innerHTML = '';
+
+  data.chapters.forEach((chapter, ci) => {
+    const chKey = 'ch-' + ci;
+    root.appendChild(chapter.editing || editingKey === chKey ? chapterForm(chapter, ci) : chapterView(chapter, ci));
+
+    chapter.sections.forEach((sec, si) => {
+      const secKey = 'sec-' + ci + '-' + si;
+      root.appendChild(editingKey === secKey ? sectionForm(chapter, sec, ci, si) : sectionView(sec, ci, si));
+    });
+
+    const addSecBtn = document.createElement('button');
+    addSecBtn.className = 'ghost-add';
+    addSecBtn.textContent = '+ ' + t(chapter.title) + '에 섹션 추가';
+    addSecBtn.onclick = () => {
+      chapter.sections.push({
+        num: String(chapter.sections.length + 1),
+        title: { ko: '새 섹션', en: 'New Section' },
+        bullets: { ko: [], en: [] },
+        images: []
+      });
+      editingKey = 'sec-' + ci + '-' + (chapter.sections.length - 1);
+      render();
+    };
+    root.appendChild(addSecBtn);
+  });
+
+  const addChBtn = document.createElement('button');
+  addChBtn.className = 'ghost-add chapter';
+  addChBtn.textContent = '+ 새 챕터 추가';
+  addChBtn.onclick = () => {
+    data.chapters.push({
+      num: String(data.chapters.length + 1).padStart(2, '0'),
+      icon: { type: 'emoji', value: '⭐' },
+      title: { ko: '새 챕터', en: 'New Chapter' },
+      sections: []
+    });
+    editingKey = 'ch-' + (data.chapters.length - 1);
+    render();
+  };
+  root.appendChild(addChBtn);
+}
+
+function t(f) { return (f && (f.ko || f.en)) || ''; }
+
+// ---------- VIEW (read-only, click to edit) ----------
+function chapterView(chapter, ci) {
+  const div = document.createElement('div');
+  div.className = 'ed-chapter-view';
+  div.innerHTML = `<span class="num-badge">${chapter.num}</span><h2>${iconHtml(chapter.icon)} ${t(chapter.title)}</h2>`;
+  div.addEventListener('click', () => { editingKey = 'ch-' + ci; render(); });
+  return div;
+}
+
+function sectionView(sec, ci, si) {
+  const div = document.createElement('div');
+  div.className = 'ed-section-view';
+  const bulletsKo = sec.bullets.ko || [];
+  const imgs = sec.images || [];
+  div.innerHTML = `
+    <div class="sec-title-row"><span class="sec-num-tag">${sec.num}.</span>${t(sec.title)}</div>
+    <ul class="bullets">${bulletsKo.slice(0,3).map(b => `<li>${b}</li>`).join('')}${bulletsKo.length > 3 ? `<li>… 외 ${bulletsKo.length-3}개</li>` : ''}</ul>
+    ${imgs.length ? `<div class="thumb-row">${imgs.map(im => `<img src="${im.src}" onerror="this.style.background='#f1d9d6';this.removeAttribute('src')">`).join('')}</div>` : ''}
+  `;
+  div.addEventListener('click', () => { editingKey = 'sec-' + ci + '-' + si; render(); });
+  return div;
+}
+
+// ---------- FORMS (inline edit) ----------
+function chapterForm(chapter, ci) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ed-form';
+  wrap.innerHTML = `
+    <div class="ed-row">
+      <span style="font-size:12px;color:var(--ink-600);">챕터 번호</span>
+      <input type="text" class="num-mini" id="f-ch-num" value="${esc(chapter.num)}">
+    </div>
+    <label class="field-label">아이콘</label>
+    <div class="row-2">
+      <select id="f-ch-icontype">
+        <option value="emoji" ${iconType(chapter.icon)==='emoji'?'selected':''}>이모지/텍스트</option>
+        <option value="image" ${iconType(chapter.icon)==='image'?'selected':''}>이미지 파일</option>
+      </select>
+      <input type="text" id="f-ch-iconvalue" placeholder="${iconType(chapter.icon)==='image' ? 'images/icon.png' : '⭐'}" value="${esc(iconValue(chapter.icon))}">
+    </div>
+    <label class="field-label">챕터 제목 (한 / EN)</label>
+    <div class="row-2">
+      <input type="text" id="f-ch-title-ko" value="${esc(chapter.title.ko)}">
+      <input type="text" id="f-ch-title-en" value="${esc(chapter.title.en)}">
+    </div>
+    <div class="ed-form-footer">
+      <button class="btn danger" id="f-ch-del">챕터 삭제</button>
+      <button class="btn primary" id="f-ch-done">완료</button>
+    </div>
+  `;
+  wrap.querySelector('#f-ch-done').onclick = () => {
+    chapter.num = wrap.querySelector('#f-ch-num').value;
+    chapter.icon = { type: wrap.querySelector('#f-ch-icontype').value, value: wrap.querySelector('#f-ch-iconvalue').value };
+    chapter.title.ko = wrap.querySelector('#f-ch-title-ko').value;
+    chapter.title.en = wrap.querySelector('#f-ch-title-en').value;
+    editingKey = null; render();
+  };
+  wrap.querySelector('#f-ch-del').onclick = () => {
+    if (!confirm('이 챕터와 안의 모든 섹션을 삭제할까요?')) return;
+    data.chapters.splice(ci, 1);
+    editingKey = null; render();
+  };
+  return wrap;
+}
+
+function sectionForm(chapter, sec, ci, si) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ed-form';
+
+  const imagesHtml = (sec.images || []).map((im, ii) => `
+    <div class="image-block" data-ii="${ii}">
+      <input type="text" class="f-img-src" placeholder="images/파일명.jpg" value="${esc(im.src)}">
+      <div class="row-3">
+        <select class="f-img-pos">
+          <option value="above" ${im.position==='above'?'selected':''}>본문 위</option>
+          <option value="below" ${(!im.position||im.position==='below')?'selected':''}>본문 아래</option>
+          <option value="left" ${im.position==='left'?'selected':''}>본문 왼쪽</option>
+          <option value="right" ${im.position==='right'?'selected':''}>본문 오른쪽</option>
+        </select>
+        <input type="number" class="f-img-w" placeholder="가로(px)" value="${im.width||''}">
+        <input type="number" class="f-img-h" placeholder="세로(px)" value="${im.height||''}">
+      </div>
+      <div class="row-2">
+        <input type="text" class="f-img-cap-ko" placeholder="캡션(한)" value="${esc(im.caption.ko)}">
+        <input type="text" class="f-img-cap-en" placeholder="캡션(EN)" value="${esc(im.caption.en)}">
+      </div>
+      <button class="btn danger" style="margin-top:6px;" data-del-img="${ii}">이미지 삭제</button>
+    </div>
+  `).join('');
+
+  wrap.innerHTML = `
+    <div class="ed-row">
+      <span style="font-size:12px;color:var(--ink-600);">섹션 #</span>
+      <input type="text" class="num-mini" id="f-sec-num" value="${esc(sec.num)}">
+    </div>
+    <label class="field-label">섹션 제목 (한 / EN)</label>
+    <div class="row-2">
+      <input type="text" id="f-sec-title-ko" value="${esc(sec.title.ko)}">
+      <input type="text" id="f-sec-title-en" value="${esc(sec.title.en)}">
+    </div>
+    <label class="field-label">설명 (한 / EN — 한 줄에 하나씩)</label>
+    <div class="row-2">
+      <textarea rows="4" id="f-sec-bul-ko">${esc((sec.bullets.ko||[]).join('\n'))}</textarea>
+      <textarea rows="4" id="f-sec-bul-en">${esc((sec.bullets.en||[]).join('\n'))}</textarea>
+    </div>
+    <label class="field-label">이미지</label>
+    <div id="f-images">${imagesHtml}</div>
+    <button class="btn ghost" id="f-img-add" type="button">+ 이미지 추가</button>
+    <div class="ed-form-footer">
+      <button class="btn danger" id="f-sec-del">섹션 삭제</button>
+      <button class="btn primary" id="f-sec-done">완료</button>
+    </div>
+  `;
+
+  wrap.querySelector('#f-img-add').onclick = () => {
+    sec.images = sec.images || [];
+    sec.images.push({ src: 'images/new.jpg', position: 'below', width: 220, height: 160, caption: { ko: '', en: '' } });
+    render();
+  };
+  wrap.querySelectorAll('[data-del-img]').forEach(btn => {
+    btn.onclick = () => {
+      const ii = parseInt(btn.dataset.delImg);
+      sec.images.splice(ii, 1);
+      render();
+    };
+  });
+
+  wrap.querySelector('#f-sec-done').onclick = () => {
+    sec.num = wrap.querySelector('#f-sec-num').value;
+    sec.title.ko = wrap.querySelector('#f-sec-title-ko').value;
+    sec.title.en = wrap.querySelector('#f-sec-title-en').value;
+    sec.bullets.ko = wrap.querySelector('#f-sec-bul-ko').value.split('\n').filter(Boolean);
+    sec.bullets.en = wrap.querySelector('#f-sec-bul-en').value.split('\n').filter(Boolean);
+    wrap.querySelectorAll('.image-block').forEach(block => {
+      const ii = parseInt(block.dataset.ii);
+      const im = sec.images[ii];
+      im.src = block.querySelector('.f-img-src').value;
+      im.position = block.querySelector('.f-img-pos').value;
+      const w = block.querySelector('.f-img-w').value;
+      const h = block.querySelector('.f-img-h').value;
+      im.width = w ? parseInt(w) : undefined;
+      im.height = h ? parseInt(h) : undefined;
+      im.caption.ko = block.querySelector('.f-img-cap-ko').value;
+      im.caption.en = block.querySelector('.f-img-cap-en').value;
+    });
+    editingKey = null; render();
+  };
+  wrap.querySelector('#f-sec-del').onclick = () => {
+    if (!confirm('이 섹션을 삭제할까요?')) return;
+    chapter.sections.splice(si, 1);
+    editingKey = null; render();
+  };
+  return wrap;
+}
+
+function exportJson() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'content.json';
+  a.click();
+}
+function loadJsonFile() { document.getElementById('fileInput').click(); }
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { data = JSON.parse(reader.result); editingKey = null; render(); }
+    catch (err) { alert('JSON 형식을 읽을 수 없어요.'); }
+  };
+  reader.readAsText(file);
+});
+
+// ---------- GitHub 직접 저장 ----------
+function toggleGhPanel() {
+  const panel = document.getElementById('ghPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) loadGhSettingsIntoForm();
+}
+
+function ghSettingsStore() {
+  // localStorage(기억하기 체크 시) 또는 sessionStorage 중 값이 있는 쪽을 읽는다.
+  return localStorage.getItem('gh_owner') !== null ? localStorage : sessionStorage;
+}
+
+function loadGhSettingsIntoForm() {
+  const store = ghSettingsStore();
+  document.getElementById('gh-owner').value = store.getItem('gh_owner') || '';
+  document.getElementById('gh-repo').value = store.getItem('gh_repo') || '';
+  document.getElementById('gh-branch').value = store.getItem('gh_branch') || 'main';
+  document.getElementById('gh-path').value = store.getItem('gh_path') || 'content.json';
+  document.getElementById('gh-token').value = store.getItem('gh_token') || '';
+  document.getElementById('gh-remember').checked = localStorage.getItem('gh_owner') !== null;
+}
+
+function saveGhSettings() {
+  const remember = document.getElementById('gh-remember').checked;
+  const store = remember ? localStorage : sessionStorage;
+  const other = remember ? sessionStorage : localStorage;
+  ['owner','repo','branch','path','token'].forEach(k => other.removeItem('gh_' + k));
+  store.setItem('gh_owner', document.getElementById('gh-owner').value.trim());
+  store.setItem('gh_repo', document.getElementById('gh-repo').value.trim());
+  store.setItem('gh_branch', document.getElementById('gh-branch').value.trim() || 'main');
+  store.setItem('gh_path', document.getElementById('gh-path').value.trim() || 'content.json');
+  store.setItem('gh_token', document.getElementById('gh-token').value.trim());
+  showGhStatus('ok', '설정을 저장했어요.');
+}
+
+function clearGhSettings() {
+  ['owner','repo','branch','path','token'].forEach(k => {
+    localStorage.removeItem('gh_' + k);
+    sessionStorage.removeItem('gh_' + k);
+  });
+  document.getElementById('gh-owner').value = '';
+  document.getElementById('gh-repo').value = '';
+  document.getElementById('gh-branch').value = 'main';
+  document.getElementById('gh-path').value = 'content.json';
+  document.getElementById('gh-token').value = '';
+  document.getElementById('gh-remember').checked = false;
+  showGhStatus('ok', '연결 정보를 지웠어요.');
+}
+
+function showGhStatus(kind, msg) {
+  const el = document.getElementById('ghStatus');
+  el.className = 'gh-status ' + kind;
+  el.textContent = msg;
+}
+
+function utf8ToBase64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+async function saveToGithub() {
+  const store = ghSettingsStore();
+  const owner = store.getItem('gh_owner');
+  const repo = store.getItem('gh_repo');
+  const branch = store.getItem('gh_branch') || 'main';
+  const path = store.getItem('gh_path') || 'content.json';
+  const token = store.getItem('gh_token');
+
+  if (!owner || !repo || !token) {
+    document.getElementById('ghPanel').classList.add('open');
+    loadGhSettingsIntoForm();
+    showGhStatus('err', '먼저 GitHub 연결 설정(계정/저장소/토큰)을 채우고 "설정 저장"을 눌러주세요.');
+    return;
+  }
+
+  document.getElementById('ghPanel').classList.add('open');
+  showGhStatus('pending', '저장 중…');
+
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+  const headers = {
+    'Authorization': 'Bearer ' + token,
+    'Accept': 'application/vnd.github+json'
+  };
+
+  try {
+    // 1) 현재 파일의 sha 조회 (덮어쓰기에 필요)
+    let sha = undefined;
+    const getRes = await fetch(apiUrl + '?ref=' + encodeURIComponent(branch), { headers });
+    if (getRes.status === 200) {
+      const info = await getRes.json();
+      sha = info.sha;
+    } else if (getRes.status !== 404) {
+      const errBody = await getRes.json().catch(() => ({}));
+      throw new Error('파일 조회 실패 (' + getRes.status + '): ' + (errBody.message || getRes.statusText));
+    }
+
+    // 2) 커밋 (생성 또는 업데이트)
+    const putRes = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        message: '매뉴얼 편집기에서 콘텐츠 업데이트',
+        content: utf8ToBase64(JSON.stringify(data, null, 2)),
+        branch: branch,
+        sha: sha
+      })
+    });
+
+    if (!putRes.ok) {
+      const errBody = await putRes.json().catch(() => ({}));
+      throw new Error('저장 실패 (' + putRes.status + '): ' + (errBody.message || putRes.statusText));
+    }
+
+    showGhStatus('ok', '✅ GitHub에 저장했어요. 실제 사이트에 반영되기까지 1분 정도 걸릴 수 있어요.');
+  } catch (err) {
+    showGhStatus('err', '❌ ' + err.message);
+  }
+}
+
+</script>
+</body>
+</html>

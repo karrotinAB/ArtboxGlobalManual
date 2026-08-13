@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "siteTitle": { "ko": "해외 매장 운영 매뉴얼", "en": "Overseas Store Operations Manual" },
+    "subtitle": { "ko": "Fixture 설명 및 진열 가이드라인", "en": "Fixture Descriptions & Display Guidelines" },
+    "logo": "ARTBOX"
+  },
+  "chapters": [
+    {
+      "id": "fixtures",
+      "num": "01",
+      "icon": { "type": "emoji", "value": "⭐" },
+      "title": { "ko": "해외 매장용 Fixture", "en": "Fixtures for Overseas Stores" },
+      "sections": [
+        {
+          "num": "1",
+          "title": { "ko": "Central Fixture", "en": "Central Fixture" },
+          "bullets": {
+            "ko": [
+              "매장 중앙에 배치되는 Fixture입니다.",
+              "높이가 낮아 대부분의 제품이 고객 눈높이에 진열됩니다.",
+              "사이드 프레임이 오픈되어 있어, 바깥쪽 면은 Space wall이나 그래픽 패널로 마감합니다."
+            ],
+            "en": [
+              "A Fixture positioned in the center of the store.",
+              "Due to its lower height, most products are displayed at the customer's eye level.",
+              "Side frames are open with exposed shelving, so the outer sides are covered with space walls or graphic panels."
+            ]
+          },
+          "images": [
+            { "src": "images/central-fixture-1.jpg", "position": "right", "width": 260, "height": 190, "caption": { "ko": "Central fixture 예시", "en": "Central fixture example" } },
+            { "src": "images/central-fixture-2.jpg", "position": "below", "width": 300, "height": 190, "caption": { "ko": "매장 내 진열 예시", "en": "In-store display example" } }
+          ]
+        },
+        {
+          "num": "4",
+          "title": { "ko": "Space Wall", "en": "Space Wall" },
+          "bullets": {
+            "ko": [
+              "Central fixture 측면에 설치합니다.",
+              "제품 진열 공간을 넓히는 용도로 사용합니다.",
+              "홈(Aru wall)이 있어 진열 시 전용 후크가 필요합니다.",
+              "Fixture를 놓을 공간이 부족할 때 진열 공간을 확장하는 용도로 사용합니다."
+            ],
+            "en": [
+              "Installed on the sides of central fixtures.",
+              "Used to increase product display space.",
+              "It has grooves (Aru Wall) and needs specialized hooks when displaying.",
+              "Used to expand display space when there is limited room to place fixtures."
+            ]
+          },
+          "images": [
+            { "src": "images/space-wall-1.jpg", "position": "below", "width": 220, "height": 160, "caption": { "ko": "Space wall 예시", "en": "Space Wall Example" } },
+            { "src": "images/space-wall-2.jpg", "position": "below", "width": 220, "height": 160, "caption": { "ko": "매장 내 진열 예시", "en": "In-store display example" } }
+          ]
+        },
+        {
+          "num": "5",
+          "title": { "ko": "Pegboard (유공보드)", "en": "Pegboard (Perforated board)" },
+          "bullets": {
+            "ko": [ "Wall fixture 설치가 어려운 벽면이나 기둥의 진열량을 늘릴 때 사용합니다." ],
+            "en": [ "Used to increase display capacity on wall surfaces or pillars where wall fixture installation is difficult." ]
+          },
+          "images": [
+            { "src": "images/pegboard-1.jpg", "position": "below", "width": 260, "height": 190, "caption": { "ko": "기둥 Pegboard 적용 예시", "en": "Example of pegboard application on pillar" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hooks",
+      "num": "02",
+      "icon": { "type": "emoji", "value": "🐰" },
+      "title": { "ko": "해외 매장용 후크", "en": "Hooks for Overseas Stores" },
+      "sections": [
+        {
+          "num": "1",
+          "title": { "ko": "Wall Hooks", "en": "Wall Hooks" },
+          "bullets": {
+            "ko": [ "Space wall 패널용 후크입니다." ],
+            "en": [ "Hooks for Space Wall Panels." ]
+          },
+          "images": [
+            { "src": "images/wall-hook-1.jpg", "position": "left", "width": 220, "height": 260, "caption": { "ko": "매장 내 진열 예시 1", "en": "In-store display example 1" } },
+            { "src": "images/wall-hook-2.jpg", "position": "below", "width": 220, "height": 160, "caption": { "ko": "매장 내 진열 예시 2", "en": "In-store display example 2" } }
+          ]
+        },
+        {
+          "num": "2",
+          "title": { "ko": "Pipe Hooks", "en": "Pipe Hooks" },
+          "bullets": {
+            "ko": [
+              "Central fixture(D200), Wall fixture(D250)에 사용되며, 파이프에 거는 구조입니다.",
+              "제품만 진열할 때는 1단 후크를, 가격표와 함께 진열할 때는 2단 후크를 사용합니다."
+            ],
+            "en": [
+              "Used on Central Fixtures (D200) and Wall Fixtures (D250), with a structure designed to hang on pipes.",
+              "When only displaying products, 1 line hooks are used. When displaying with price tags, 2 line hooks are used."
+            ]
+          },
+          "images": [
+            { "src": "images/pipe-hook-1.jpg", "position": "below", "width": 280, "height": 190, "caption": { "ko": "매장 내 진열 예시", "en": "In-store display example - Front" } }
+          ]
+        }
+      ]
+    }
+  ]
+}
